@@ -43,8 +43,19 @@ target_link_libraries(
     gtest_main
 )
 
+add_executable(
+    position_report_class_b_test
+    position_report_class_b_test.cpp
+)
+target_link_libraries(
+    position_report_class_b_test
+    aislib
+    gtest_main
+)
+
 # Register tests with CTest
 include(GoogleTest)
 gtest_discover_tests(bit_vector_test)
 gtest_discover_tests(nmea_utils_test)
 gtest_discover_tests(multipart_message_manager_test)
+gtest_discover_tests(position_report_class_b_test)

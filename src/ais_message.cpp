@@ -4,6 +4,7 @@
  */
 
  #include "aislib/ais_message.h"
+ #include "aislib/message_factory.h" // Include MessageFactory
  #include "aislib/nmea_utils.h"
  #include <sstream>
  #include <iomanip>
@@ -12,29 +13,8 @@
  namespace aislib {
  
  std::unique_ptr<AISMessage> AISMessage::from_bits(const BitVector& bits) {
-     // Ensure we have enough bits for a valid message (minimum 38 bits)
-     if (bits.size() < 38) {
-         throw std::invalid_argument("Bit vector too small for an AIS message");
-     }
-     
-     // Extract message type from bits 0-5 (6 bits)
-     uint8_t message_type = static_cast<uint8_t>(bits.get_uint(0, 6));
-     
-     // Create appropriate message type based on the message type field
-     switch (message_type) {
-         // These will be implemented in later phases
-         // case 1:
-         // case 2:
-         // case 3:
-         //     return std::make_unique<PositionReportClassA>(bits);
-         // case 4:
-         //     return std::make_unique<BaseStationReport>(bits);
-         // case 5:
-         //     return std::make_unique<StaticAndVoyageData>(bits);
-         // ...
-         default:
-             throw std::invalid_argument("Unsupported message type: " + std::to_string(message_type));
-     }
+     // Use the MessageFactory to create the appropriate message type
+     return MessageFactory::instance().create_message(bits);
  }
  
  std::unique_ptr<AISMessage> AISMessage::from_nmea(const std::string& nmea) {
