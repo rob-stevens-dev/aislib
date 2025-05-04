@@ -1,3 +1,6 @@
 # Add example applications
 add_executable(nmea_parser nmea_parser.cpp)
 target_link_libraries(nmea_parser aislib)
+
+add_executable(binary_message_example binary_message_example.cpp)
+target_link_libraries(binary_message_example aislib)

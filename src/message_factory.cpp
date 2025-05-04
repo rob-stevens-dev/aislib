@@ -4,7 +4,10 @@
  */
 
  #include "aislib/message_factory.h"
-
+ #include "aislib/position_report_class_b.h"
+ #include "aislib/static_data.h"
+ #include <stdexcept>
+ 
  namespace aislib {
  
  MessageFactory& MessageFactory::instance() {
@@ -13,8 +16,20 @@
  }
  
  MessageFactory::MessageFactory() {
-     // This will be populated with message type constructors
-     // as we implement each message type
+     // Register message types implemented so far
+     register_message_type(18, [](const BitVector& bits) {
+         return std::make_unique<StandardPositionReportClassB>(bits);
+     });
+     
+     register_message_type(19, [](const BitVector& bits) {
+         return std::make_unique<ExtendedPositionReportClassB>(bits);
+     });
+     
+     register_message_type(5, [](const BitVector& bits) {
+         return std::make_unique<StaticAndVoyageData>(bits);
+     });
+ 
+     // Additional message types will be registered as they are implemented
  }
  
  std::unique_ptr<AISMessage> MessageFactory::create_message(const BitVector& bits) const {

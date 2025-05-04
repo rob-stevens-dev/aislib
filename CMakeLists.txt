@@ -19,6 +19,11 @@ set(AISLIB_SOURCES
     src/multipart_message_manager.cpp
     src/ais_parser.cpp
     src/message_factory.cpp
+    src/position_report_class_b.cpp
+    src/static_and_voyage_data.cpp
+    src/binary_message.cpp
+    src/binary_addressed_message.cpp
+    src/binary_broadcast_message.cpp
 )
 
 # Library headers
@@ -29,6 +34,11 @@ set(AISLIB_HEADERS
     include/aislib/multipart_message_manager.h
     include/aislib/ais_parser.h
     include/aislib/message_factory.h
+    include/aislib/position_report_class_b.h
+    include/aislib/static_data.h
+    include/aislib/binary_message.h
+    include/aislib/binary_addressed_message.h
+    include/aislib/binary_broadcast_message.h
 )
 
 # Create the library
@@ -50,12 +60,74 @@ target_compile_options(aislib PRIVATE
 # Tests
 if(AISLIB_BUILD_TESTS)
     enable_testing()
-    add_subdirectory(tests)
+    
+    # Find or fetch GoogleTest
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+    
+    # Add test executables
+    add_executable(
+        bit_vector_test
+        tests/bit_vector_test.cpp
+    )
+    target_link_libraries(
+        bit_vector_test
+        aislib
+        gtest_main
+    )
+    
+    add_executable(
+        nmea_utils_test
+        tests/nmea_utils_test.cpp
+    )
+    target_link_libraries(
+        nmea_utils_test
+        aislib
+        gtest_main
+    )
+    
+    add_executable(
+        multipart_message_manager_test
+        tests/multipart_message_manager_test.cpp
+    )
+    target_link_libraries(
+        multipart_message_manager_test
+        aislib
+        gtest_main
+    )
+    
+    add_executable(
+        position_report_class_b_test
+        tests/position_report_class_b_test.cpp
+    )
+    target_link_libraries(
+        position_report_class_b_test
+        aislib
+        gtest_main
+    )
+    
+    # Register tests with CTest
+    include(GoogleTest)
+    gtest_discover_tests(bit_vector_test)
+    gtest_discover_tests(nmea_utils_test)
+    gtest_discover_tests(multipart_message_manager_test)
+    gtest_discover_tests(position_report_class_b_test)
 endif()
 
 # Examples
 if(AISLIB_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    add_executable(nmea_parser examples/nmea_parser.cpp)
+    target_link_libraries(nmea_parser aislib)
+    
+    add_executable(binary_message_example examples/binary_message_example.cpp)
+    target_link_libraries(binary_message_example aislib)
 endif()
 
 # Documentation
