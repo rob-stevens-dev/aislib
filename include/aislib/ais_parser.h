@@ -1,9 +1,10 @@
 /**
  * @file ais_parser.h
- * @brief AIS Parser
+ * @brief AIS Parser with enhanced multi-part message handling
  * 
  * This file defines the AISParser class, which handles parsing of
- * NMEA sentences containing AIS messages.
+ * NMEA sentences containing AIS messages, including proper handling
+ * of multi-part messages.
  */
 
  #ifndef AISLIB_AIS_PARSER_H
@@ -20,7 +21,7 @@
  
  /**
   * @class AISParser
-  * @brief Parser for AIS messages
+  * @brief Parser for AIS messages with enhanced multi-part message support
   */
  class AISParser {
  public:
@@ -67,6 +68,10 @@
       * @brief Parse a complete NMEA sentence
       * @param nmea_sentence NMEA sentence
       * @return Smart pointer to AIS message if successful, nullptr otherwise
+      * 
+      * This method will automatically handle single-part messages and multi-part
+      * message fragments. For multi-part messages, it returns a message only when
+      * all fragments have been received.
       */
      std::unique_ptr<AISMessage> parse(const std::string& nmea_sentence);
      
@@ -74,8 +79,24 @@
       * @brief Add a fragment of a multipart message
       * @param nmea_sentence NMEA sentence containing the fragment
       * @return Smart pointer to AIS message if all fragments are received, nullptr otherwise
+      * 
+      * This is a convenience wrapper around parse() that makes the intent clearer.
       */
      std::unique_ptr<AISMessage> add_fragment(const std::string& nmea_sentence);
+     
+     /**
+      * @brief Clean up expired message fragments
+      * 
+      * This method should be called periodically to remove fragments that have exceeded
+      * the configured timeout.
+      */
+     void cleanup_expired_fragments();
+     
+     /**
+      * @brief Get the number of incomplete multi-part messages
+      * @return Count of incomplete messages
+      */
+     size_t get_incomplete_message_count() const;
      
      /**
       * @brief Get the last parse error
@@ -118,6 +139,9 @@
   * @brief Simplified API for parsing AIS messages
   * @param nmea_sentence NMEA sentence
   * @return Optional smart pointer to AIS message
+  * 
+  * This function provides a simple one-shot parsing of AIS messages.
+  * Note that it does not support multi-part messages that span multiple calls.
   */
  std::optional<std::unique_ptr<AISMessage>> parse_ais(const std::string& nmea_sentence);
  

@@ -182,24 +182,19 @@
     for (size_t i = 0; i < char_count; ++i) {
         uint8_t value = static_cast<uint8_t>(get_uint(start_index + i * 6, 6));
         
-        // For bit counts of 18, we need special handling for AIS text
-        // This is due to the way the 6-bit ASCII is encoded in AIS
-        if (bit_count == 18 && i < 3) {
-            char c = decode_ascii(value);
-            if (c != '@') { // Skip null/@
-                result += c;
-            }
-        } else {
-            char c = decode_ascii(value);
-            if (c != '@') { // Skip null/@
-                result += c;
-            }
+        char c = decode_ascii(value);
+        if (c != '@' && c != ' ') { // Skip null/@ and trailing spaces
+            result += c;
+        } else if (!result.empty() || c == ' ') {
+            // Only add spaces if they're not trailing or if we've already added other characters
+            result += c;
         }
     }
     
     return result;
 }
  
+// Modification for BitVector::append_string method in bit_vector.cpp
 void BitVector::append_string(const std::string& value, size_t bit_count) {
     if (bit_count % 6 != 0) {
         throw std::invalid_argument("String bit count must be multiple of 6");
@@ -209,6 +204,11 @@ void BitVector::append_string(const std::string& value, size_t bit_count) {
     if (value.length() > max_chars) {
         throw std::invalid_argument("String too long for specified bit count");
     }
+
+    std::string actual_value = value;
+    if (value.length() > max_chars) {
+        actual_value = value.substr(0, max_chars);
+    }
     
     // Ensure we have enough capacity
     reserve(bit_count_ + bit_count);
@@ -217,8 +217,8 @@ void BitVector::append_string(const std::string& value, size_t bit_count) {
     for (size_t i = 0; i < max_chars; ++i) {
         uint8_t char_value;
         
-        if (i < value.length()) {
-            char_value = encode_ascii(value[i]);
+        if (i < actual_value.length()) {
+            char_value = encode_ascii(actual_value[i]);
         } else {
             // Pad with space (32 in 6-bit ASCII)
             char_value = 32;  // Space in AIS ASCII is 32, not 0
