@@ -172,50 +172,50 @@
     }
 }
  
- BitVector MultipartMessageManager::combine_fragments(const std::vector<Fragment>& fragments) {
-     BitVector combined;
-     
-     // Calculate the total size needed (excluding fill bits in the last fragment)
-     size_t total_bits = 0;
-     for (size_t i = 0; i < fragments.size(); ++i) {
-         const Fragment& fragment = fragments[i];
-         
-         // Convert payload to bits
-         BitVector fragment_bits(fragment.payload);
-         
-         // Add all bits except fill bits in the last fragment
-         if (i == fragments.size() - 1) {
-             total_bits += fragment_bits.size() - fragment.fill_bits;
-         } else {
-             total_bits += fragment_bits.size();
-         }
-     }
-     
-     // Reserve capacity for the combined bit vector
-     combined.reserve(total_bits);
-     
-     // Combine all fragments
-     for (size_t i = 0; i < fragments.size(); ++i) {
-         const Fragment& fragment = fragments[i];
-         
-         // Convert payload to bits
-         BitVector fragment_bits(fragment.payload);
-         
-         // Add all bits except fill bits in the last fragment
-         if (i == fragments.size() - 1) {
-             size_t bits_to_copy = fragment_bits.size() - fragment.fill_bits;
-             
-             for (size_t j = 0; j < bits_to_copy; ++j) {
-                 combined.append_bit(fragment_bits.get_bit(j));
-             }
-         } else {
-             for (size_t j = 0; j < fragment_bits.size(); ++j) {
-                 combined.append_bit(fragment_bits.get_bit(j));
-             }
-         }
-     }
-     
-     return combined;
- }
+BitVector MultipartMessageManager::combine_fragments(const std::vector<Fragment>& fragments) {
+    BitVector combined;
+    
+    // Calculate the total size needed (excluding fill bits in the last fragment)
+    size_t total_bits = 0;
+    for (size_t i = 0; i < fragments.size(); ++i) {
+        const Fragment& fragment = fragments[i];
+        
+        // Convert payload to bits
+        BitVector fragment_bits(fragment.payload);
+        
+        // Add all bits except fill bits in the last fragment
+        if (i == fragments.size() - 1) {
+            total_bits += fragment_bits.size() - fragment.fill_bits;
+        } else {
+            total_bits += fragment_bits.size();
+        }
+    }
+    
+    // Reserve capacity for the combined bit vector
+    combined.reserve(total_bits);
+    
+    // Combine all fragments
+    for (size_t i = 0; i < fragments.size(); ++i) {
+        const Fragment& fragment = fragments[i];
+        
+        // Convert payload to bits
+        BitVector fragment_bits(fragment.payload);
+        
+        // Add all bits except fill bits in the last fragment
+        if (i == fragments.size() - 1 && fragment.fill_bits > 0) {
+            size_t bits_to_copy = fragment_bits.size() - fragment.fill_bits;
+            
+            for (size_t j = 0; j < bits_to_copy; ++j) {
+                combined.append_bit(fragment_bits.get_bit(j));
+            }
+        } else {
+            for (size_t j = 0; j < fragment_bits.size(); ++j) {
+                combined.append_bit(fragment_bits.get_bit(j));
+            }
+        }
+    }
+    
+    return combined;
+}
  
  } // namespace aislib

@@ -205,14 +205,20 @@
      imo_number_ = imo;
  }
  
- void StaticAndVoyageData::set_call_sign(const std::string& call_sign) {
-     call_sign_ = call_sign;
- }
- 
- void StaticAndVoyageData::set_vessel_name(const std::string& name) {
-     vessel_name_ = name;
- }
- 
+void StaticAndVoyageData::set_call_sign(const std::string& call_sign) {
+    // Call sign is limited to 7 characters (42 bits)
+    call_sign_ = call_sign.length() > 7 ? call_sign.substr(0, 7) : call_sign;
+}
+
+void StaticAndVoyageData::set_vessel_name(const std::string& name) {
+    // Vessel name is limited to 20 characters (120 bits)
+    vessel_name_ = name.length() > 20 ? name.substr(0, 20) : name;
+}
+
+void StaticAndVoyageData::set_destination(const std::string& destination) {
+    // Destination is limited to 20 characters (120 bits)
+    destination_ = destination.length() > 20 ? destination.substr(0, 20) : destination;
+} 
  void StaticAndVoyageData::set_ship_type(ShipType type) {
      ship_type_ = type;
  }
@@ -284,10 +290,6 @@
      } else {
          draught_ = static_cast<uint8_t>(std::round(draught * 10.0f));
      }
- }
- 
- void StaticAndVoyageData::set_destination(const std::string& destination) {
-     destination_ = destination;
  }
  
  void StaticAndVoyageData::set_dte_flag(bool dte) {

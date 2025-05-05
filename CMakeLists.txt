@@ -131,6 +131,17 @@ if(AISLIB_BUILD_TESTS)
         gtest_main
     )
     
+    # Multi-part message integration test (Phase 4)
+    add_executable(
+        multipart_message_integration_test
+        tests/multipart_message_integration_test.cpp
+    )
+    target_link_libraries(
+        multipart_message_integration_test
+        aislib
+        gtest_main
+    )
+    
     # Register tests with CTest
     include(GoogleTest)
     gtest_discover_tests(bit_vector_test)
@@ -138,6 +149,7 @@ if(AISLIB_BUILD_TESTS)
     gtest_discover_tests(multipart_message_manager_test)
     gtest_discover_tests(position_report_class_b_test)
     gtest_discover_tests(binary_message_test)
+    gtest_discover_tests(multipart_message_integration_test)
 endif()
 
 # Examples
@@ -147,6 +159,10 @@ if(AISLIB_BUILD_EXAMPLES)
     
     add_executable(binary_message_example examples/binary_message_example.cpp)
     target_link_libraries(binary_message_example aislib)
+    
+    # Multi-part message example (Phase 4)
+    add_executable(multipart_example examples/multipart_example.cpp)
+    target_link_libraries(multipart_example aislib)
 endif()
 
 # Documentation

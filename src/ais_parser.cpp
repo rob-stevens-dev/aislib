@@ -1,6 +1,6 @@
 /**
  * @file ais_parser.cpp
- * @brief Implementation of AISParser class
+ * @brief Implementation of AISParser class with enhanced multi-part message handling
  */
 
  #include "aislib/ais_parser.h"
@@ -51,21 +51,12 @@
          return nullptr;
      }
      
-     // Extract message ID
+     // Extract message ID, channel, payload, and fill bits
      std::string message_id = fields[3];
-     
-     // Extract channel
      char channel = fields[4][0];
-     if (channel != 'A' && channel != 'B') {
-         set_error(ParseError::ErrorType::INVALID_FRAGMENT_INFO, "Invalid channel");
-         return nullptr;
-     }
-     
-     // Extract payload
      std::string payload = fields[5];
-     
-     // Extract fill bits
      uint8_t fill_bits = 0;
+     
      try {
          fill_bits = static_cast<uint8_t>(std::stoi(fields[6]));
      } catch (const std::exception&) {
@@ -73,7 +64,7 @@
          return nullptr;
      }
      
-     // Check if single fragment
+     // Handle single-part messages directly
      if (fragment_count == 1) {
          try {
              // Convert payload to bits
@@ -81,22 +72,12 @@
              
              // Adjust for fill bits
              if (fill_bits > 0 && fill_bits <= 5) {
-                 bits = BitVector(payload.substr(0, payload.length() - 1)); // Remove last character
-                 
-                 // Add the bits from the last character, excluding fill bits
-                 uint8_t last_char_value = 0;
-                 char last_char = payload.back();
-                 
-                 if (last_char >= '0' && last_char <= 'W') {
-                     last_char_value = static_cast<uint8_t>(last_char - '0');
-                 } else if (last_char >= '`' && last_char <= 'w') {
-                     last_char_value = static_cast<uint8_t>(last_char - '`' + 40);
+                 // Create a new BitVector excluding fill bits
+                 BitVector adjusted_bits;
+                 for (size_t i = 0; i < bits.size() - fill_bits; i++) {
+                     adjusted_bits.append_bit(bits.get_bit(i));
                  }
-                 
-                 // Add the valid bits from the last character
-                 for (int i = 5; i >= static_cast<int>(fill_bits); --i) {
-                     bits.append_bit((last_char_value & (1 << i)) != 0);
-                 }
+                 return AISMessage::from_bits(adjusted_bits);
              }
              
              // Create message from bits
@@ -106,77 +87,39 @@
              return nullptr;
          }
      } else {
-         // Multipart message
-         return add_fragment(nmea_sentence);
+         // This is a multi-part message
+         try {
+             // Add fragment to MultipartMessageManager
+             auto result = multipart_manager_.add_fragment(
+                 fragment_number, fragment_count, message_id, channel, payload, fill_bits);
+             
+             // Check if all fragments are received
+             if (result) {
+                 // Message is complete, create message from combined bits
+                 return AISMessage::from_bits(*result);
+             }
+             
+             // Not all fragments received yet, return nullptr without setting an error
+             return nullptr;
+         } catch (const std::exception& e) {
+             set_error(ParseError::ErrorType::OTHER, e.what());
+             return nullptr;
+         }
      }
  }
  
  std::unique_ptr<AISMessage> AISParser::add_fragment(const std::string& nmea_sentence) {
-     // Clear previous error
-     clear_error();
-     
-     // Validate checksum
-     if (!NMEAUtils::validate_checksum(nmea_sentence)) {
-         set_error(ParseError::ErrorType::INVALID_CHECKSUM, "Invalid NMEA checksum");
-         return nullptr;
-     }
-     
-     // Parse fields
-     std::vector<std::string> fields = NMEAUtils::parse_fields(nmea_sentence);
-     
-     // Check if it's an AIS message (!AIVDM or !AIVDO)
-     if (fields.size() < 7 || (fields[0] != "!AIVDM" && fields[0] != "!AIVDO")) {
-         set_error(ParseError::ErrorType::INVALID_SENTENCE_FORMAT, "Not an AIS message");
-         return nullptr;
-     }
-     
-     // Extract fragment information
-     uint8_t fragment_count = 0;
-     uint8_t fragment_number = 0;
-     
-     try {
-         fragment_count = static_cast<uint8_t>(std::stoi(fields[1]));
-         fragment_number = static_cast<uint8_t>(std::stoi(fields[2]));
-     } catch (const std::exception&) {
-         set_error(ParseError::ErrorType::INVALID_FRAGMENT_INFO, "Invalid fragment information");
-         return nullptr;
-     }
-     
-     // Extract message ID
-     std::string message_id = fields[3];
-     
-     // Extract channel
-     char channel = fields[4][0];
-     
-     // Extract payload
-     std::string payload = fields[5];
-     
-     // Extract fill bits
-     uint8_t fill_bits = 0;
-     try {
-         fill_bits = static_cast<uint8_t>(std::stoi(fields[6]));
-     } catch (const std::exception&) {
-         set_error(ParseError::ErrorType::INVALID_FRAGMENT_INFO, "Invalid fill bits");
-         return nullptr;
-     }
-     
-     try {
-         // Add fragment to multipart manager
-         auto combined = multipart_manager_.add_fragment(
-             fragment_number, fragment_count, message_id, channel, payload, fill_bits);
-         
-         // Check if all fragments are received
-         if (combined) {
-             // Create message from combined bits
-             return AISMessage::from_bits(*combined);
-         }
-         
-         // Not all fragments received yet
-         return nullptr;
-     } catch (const std::exception& e) {
-         set_error(ParseError::ErrorType::OTHER, e.what());
-         return nullptr;
-     }
+     // This is a convenience wrapper around parse() that makes the intent clearer
+     return parse(nmea_sentence);
+ }
+ 
+ void AISParser::cleanup_expired_fragments() {
+     // Delegate to the multipart manager
+     multipart_manager_.cleanup_expired();
+ }
+ 
+ size_t AISParser::get_incomplete_message_count() const {
+     return multipart_manager_.get_incomplete_count();
  }
  
  AISParser::ParseError AISParser::get_last_error() const {
