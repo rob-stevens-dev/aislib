@@ -24,6 +24,9 @@ set(AISLIB_SOURCES
     src/binary_message.cpp
     src/binary_addressed_message.cpp
     src/binary_broadcast_message.cpp
+    # Application-specific message types
+    src/application/meteorological_data.cpp
+    src/application/area_notice.cpp
 )
 
 # Library headers
@@ -39,6 +42,10 @@ set(AISLIB_HEADERS
     include/aislib/binary_message.h
     include/aislib/binary_addressed_message.h
     include/aislib/binary_broadcast_message.h
+    # Application-specific message types
+    include/aislib/application/binary_application_ids.h
+    include/aislib/application/meteorological_data.h
+    include/aislib/application/area_notice.h
 )
 
 # Create the library
@@ -113,12 +120,24 @@ if(AISLIB_BUILD_TESTS)
         gtest_main
     )
     
+    # Binary message test
+    add_executable(
+        binary_message_test
+        tests/binary_message_test.cpp
+    )
+    target_link_libraries(
+        binary_message_test
+        aislib
+        gtest_main
+    )
+    
     # Register tests with CTest
     include(GoogleTest)
     gtest_discover_tests(bit_vector_test)
     gtest_discover_tests(nmea_utils_test)
     gtest_discover_tests(multipart_message_manager_test)
     gtest_discover_tests(position_report_class_b_test)
+    gtest_discover_tests(binary_message_test)
 endif()
 
 # Examples
